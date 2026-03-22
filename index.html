@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>로그인 - 수출 관리 대시보드</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height:100vh; display:flex; align-items:center; justify-content:center; }
+.login-container { background:white; border-radius:16px; padding:48px; width:400px; box-shadow:0 20px 60px rgba(0,0,0,0.3); }
+.login-header { text-align:center; margin-bottom:32px; }
+.login-header h1 { font-size:24px; color:#1a73e8; margin-bottom:8px; }
+.login-header p { color:#5f6368; font-size:14px; }
+.login-header .logo { font-size:48px; margin-bottom:16px; display:block; }
+.form-group { margin-bottom:20px; }
+.form-group label { display:block; margin-bottom:6px; font-size:14px; font-weight:600; color:#333; }
+.form-group input { width:100%; padding:12px 16px; border:2px solid #e0e0e0; border-radius:8px; font-size:15px; transition:border-color 0.2s; }
+.form-group input:focus { outline:none; border-color:#1a73e8; }
+.login-btn { width:100%; padding:14px; background:#1a73e8; color:white; border:none; border-radius:8px; font-size:16px; font-weight:600; cursor:pointer; transition:background 0.2s; }
+.login-btn:hover { background:#1557b0; }
+.login-btn:disabled { background:#94b8e8; cursor:not-allowed; }
+.error-msg { color:#d93025; font-size:13px; margin-top:12px; text-align:center; display:none; }
+.loading-msg { color:#1a73e8; font-size:13px; margin-top:12px; text-align:center; display:none; }
+.company-info { text-align:center; margin-top:24px; padding-top:20px; border-top:1px solid #eee; color:#999; font-size:12px; }
+</style>
+</head>
+<body>
+<div class="login-container">
+  <div class="login-header">
+    <span class="logo">📦</span>
+    <h1>수출 관리 시스템</h1>
+    <p>Blood Collection Tube Export Management</p>
+  </div>
+  <div class="form-group">
+    <label>아이디</label>
+    <input type="text" id="username" placeholder="아이디를 입력하세요" autocomplete="username">
+  </div>
+  <div class="form-group">
+    <label>비밀번호</label>
+    <input type="password" id="password" placeholder="비밀번호를 입력하세요" autocomplete="current-password">
+  </div>
+  <button class="login-btn" id="loginBtn" onclick="handleLogin()">로그인</button>
+  <div class="error-msg" id="errorMsg"></div>
+  <div class="loading-msg" id="loadingMsg">로그인 중...</div>
+  <div class="company-info">SOYA GREENTEC Co., Ltd.</div>
+</div>
+
+<script>
+const API_URL = 'https://script.google.com/macros/s/AKfycbzvAKvtrZl1Hk3chwa-yF24XCpdbriKajMC5YKXyBBchRMalEid2ebZHJfmxcQTCQSnQQ/exec';
+
+// Enter키로 로그인
+document.getElementById('password').addEventListener('keypress', function(e) {
+  if (e.key === 'Enter') handleLogin();
+});
+document.getElementById('username').addEventListener('keypress', function(e) {
+  if (e.key === 'Enter') document.getElementById('password').focus();
+});
+
+// 이미 로그인된 경우 대시보드로
+if (sessionStorage.getItem('username')) {
+  window.location.href = 'dashboard.html';
+}
+
+function showError(msg) {
+  const el = document.getElementById('errorMsg');
+  el.textContent = msg;
+  el.style.display = 'block';
+  document.getElementById('loadingMsg').style.display = 'none';
+}
+
+async function handleLogin() {
+  const username = document.getElementById('username').value.trim();
+  const password = document.getElementById('password').value.trim();
+
+  if (!username || !password) {
+    showError('아이디와 비밀번호를 입력해주세요.');
+    return;
+  }
+
+  const btn = document.getElementById('loginBtn');
+  btn.disabled = true;
+  document.getElementById('errorMsg').style.display = 'none';
+  document.getElementById('loadingMsg').style.display = 'block';
+
+  try {
+    const url = `${API_URL}?action=auth&username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`;
+    const response = await fetch(url, { redirect: 'follow' });
+    const result = await response.json();
+
+    if (result.success) {
+      sessionStorage.setItem('username', result.username || username);
+      sessionStorage.setItem('userRole', result.role || 'user');
+      sessionStorage.setItem('displayName', result.displayName || username);
+      window.location.href = 'dashboard.html';
+    } else {
+      showError(result.message || '로그인에 실패했습니다.');
+      btn.disabled = false;
+    }
+  } catch (error) {
+    showError('서버 연결에 실패했습니다. 잠시 후 다시 시도해주세요.');
+    btn.disabled = false;
+  }
+}
+</script>
+</body>
+</html>

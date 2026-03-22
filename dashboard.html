@@ -1,0 +1,3587 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>수출 관리 시스템 - Blood Collection Tube</title>
+
+    <!-- External Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.min.js"></script>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-color: #1a73e8;
+            --primary-dark: #1557b0;
+            --primary-light: #e8f0fe;
+            --secondary-color: #34a853;
+            --danger-color: #d33b27;
+            --warning-color: #fbbc04;
+            --info-color: #4285f4;
+            --success-color: #34a853;
+            --gray-50: #f9fafb;
+            --gray-100: #f3f4f6;
+            --gray-200: #e5e7eb;
+            --gray-300: #d1d5db;
+            --gray-400: #9ca3af;
+            --gray-500: #6b7280;
+            --gray-600: #4b5563;
+            --gray-700: #374151;
+            --gray-800: #1f2937;
+            --gray-900: #111827;
+            --border-radius: 8px;
+            --transition: all 0.3s ease;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Noto Sans KR', sans-serif;
+            background-color: #f5f7fa;
+            color: var(--gray-800);
+            line-height: 1.6;
+        }
+
+        /* Container Layout */
+        .container {
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Sidebar */
+        #sidebar {
+            width: 260px;
+            background-color: #f8f9fa;
+            border-right: 1px solid var(--gray-200);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            transition: var(--transition);
+            z-index: 1000;
+        }
+
+        .sidebar-header {
+            padding: 24px 16px;
+            border-bottom: 1px solid var(--gray-200);
+            background-color: white;
+        }
+
+        .sidebar-logo {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .sidebar-logo-emoji {
+            font-size: 24px;
+        }
+
+        .sidebar-nav {
+            flex: 1;
+            padding: 16px 0;
+            overflow-y: auto;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            color: var(--gray-700);
+            cursor: pointer;
+            border-left: 3px solid transparent;
+            transition: var(--transition);
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .nav-item:hover {
+            background-color: var(--primary-light);
+            color: var(--primary-color);
+        }
+
+        .nav-item.active {
+            background-color: var(--primary-light);
+            color: var(--primary-color);
+            border-left-color: var(--primary-color);
+        }
+
+        .nav-icon {
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+
+        .sidebar-footer {
+            padding: 16px;
+            border-top: 1px solid var(--gray-200);
+            background-color: white;
+        }
+
+        .user-info {
+            margin-bottom: 12px;
+        }
+
+        .user-name {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--gray-800);
+            margin-bottom: 4px;
+        }
+
+        .user-role-badge {
+            display: inline-block;
+            font-size: 11px;
+            padding: 3px 8px;
+            background-color: var(--primary-light);
+            color: var(--primary-color);
+            border-radius: 4px;
+            font-weight: 600;
+        }
+
+        .logout-btn {
+            width: 100%;
+            padding: 8px 12px;
+            background-color: var(--gray-100);
+            color: var(--gray-700);
+            border: 1px solid var(--gray-200);
+            border-radius: var(--border-radius);
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .logout-btn:hover {
+            background-color: var(--gray-200);
+            color: var(--gray-800);
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .header {
+            background-color: white;
+            border-bottom: 1px solid var(--gray-200);
+            padding: 16px 24px;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+        }
+
+        .content-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 24px;
+        }
+
+        .page {
+            display: none;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        /* Dashboard Page */
+        .dashboard-filters {
+            background-color: white;
+            padding: 16px;
+            border-radius: var(--border-radius);
+            margin-bottom: 24px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+
+        .filter-row {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .filter-group {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .filter-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--gray-600);
+            white-space: nowrap;
+        }
+
+        .filter-btn {
+            padding: 6px 12px;
+            border: 1px solid var(--gray-300);
+            background-color: white;
+            color: var(--gray-700);
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: var(--transition);
+            white-space: nowrap;
+        }
+
+        .filter-btn:hover,
+        .filter-btn.active {
+            background-color: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        .date-inputs {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .date-inputs input {
+            padding: 6px 10px;
+            border: 1px solid var(--gray-300);
+            border-radius: 6px;
+            font-size: 12px;
+        }
+
+        .current-date {
+            font-size: 12px;
+            color: var(--gray-500);
+        }
+
+        /* Stats Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background-color: white;
+            padding: 20px;
+            border-radius: var(--border-radius);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+            transition: var(--transition);
+        }
+
+        .stat-card:hover {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: var(--gray-500);
+            font-weight: 600;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin-bottom: 8px;
+        }
+
+        .stat-unit {
+            font-size: 12px;
+            color: var(--gray-500);
+        }
+
+        .stat-change {
+            font-size: 11px;
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid var(--gray-200);
+        }
+
+        .stat-change.positive {
+            color: var(--success-color);
+        }
+
+        .stat-change.negative {
+            color: var(--danger-color);
+        }
+
+        /* Analysis Selector */
+        .analysis-selector {
+            background-color: white;
+            padding: 12px;
+            border-radius: var(--border-radius);
+            display: flex;
+            gap: 8px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+
+        .analysis-btn {
+            padding: 8px 16px;
+            border: 1px solid var(--gray-300);
+            background-color: white;
+            color: var(--gray-700);
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            white-space: nowrap;
+        }
+
+        .analysis-btn:hover,
+        .analysis-btn.active {
+            background-color: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        /* Charts Area */
+        #dashChartsArea {
+            background-color: white;
+            padding: 20px;
+            border-radius: var(--border-radius);
+            margin-bottom: 24px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin-bottom: 24px;
+        }
+
+        .chart-container:last-child {
+            margin-bottom: 0;
+        }
+
+        .chart-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--gray-800);
+            margin-bottom: 16px;
+        }
+
+        /* Tables */
+        .table-container {
+            background-color: white;
+            border-radius: var(--border-radius);
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+
+        .table-header {
+            padding: 16px;
+            border-bottom: 1px solid var(--gray-200);
+            background-color: var(--gray-50);
+        }
+
+        .table-header h3 {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--gray-800);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead th {
+            padding: 12px 16px;
+            background-color: var(--gray-50);
+            border-bottom: 1px solid var(--gray-200);
+            font-size: 12px;
+            font-weight: 700;
+            text-align: left;
+            color: var(--gray-700);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        tbody td {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--gray-100);
+            font-size: 13px;
+            color: var(--gray-700);
+        }
+
+        tbody tr:hover {
+            background-color: var(--gray-50);
+        }
+
+        tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* Forms & Inputs */
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--gray-700);
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        input[type="text"],
+        input[type="email"],
+        input[type="tel"],
+        input[type="date"],
+        input[type="number"],
+        select,
+        textarea {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid var(--gray-300);
+            border-radius: 6px;
+            font-size: 13px;
+            font-family: inherit;
+            transition: var(--transition);
+        }
+
+        input[type="text"]:focus,
+        input[type="email"]:focus,
+        input[type="tel"]:focus,
+        input[type="date"]:focus,
+        input[type="number"]:focus,
+        select:focus,
+        textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px var(--primary-light);
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            white-space: nowrap;
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--primary-dark);
+        }
+
+        .btn-secondary {
+            background-color: var(--gray-200);
+            color: var(--gray-800);
+        }
+
+        .btn-secondary:hover {
+            background-color: var(--gray-300);
+        }
+
+        .btn-danger {
+            background-color: var(--danger-color);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background-color: #b72817;
+        }
+
+        .btn-success {
+            background-color: var(--success-color);
+            color: white;
+        }
+
+        .btn-success:hover {
+            background-color: #2d8a48;
+        }
+
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+
+        .btn-lg {
+            padding: 12px 24px;
+            font-size: 14px;
+        }
+
+        /* Modals */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background-color: white;
+            border-radius: var(--border-radius);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .modal-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--gray-200);
+            background-color: var(--gray-50);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h2 {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--gray-800);
+        }
+
+        .modal-close-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: var(--gray-500);
+            transition: var(--transition);
+            padding: 0;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-close-btn:hover {
+            color: var(--gray-800);
+        }
+
+        .modal-body {
+            padding: 20px;
+        }
+
+        .modal-footer {
+            padding: 16px 20px;
+            border-top: 1px solid var(--gray-200);
+            background-color: var(--gray-50);
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+        }
+
+        /* Modal Tabs */
+        .modal-tabs {
+            display: flex;
+            gap: 0;
+            border-bottom: 1px solid var(--gray-200);
+            margin-bottom: 20px;
+        }
+
+        .modal-tab {
+            padding: 12px 16px;
+            border: none;
+            background-color: transparent;
+            color: var(--gray-600);
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: var(--transition);
+            white-space: nowrap;
+        }
+
+        .modal-tab:hover {
+            color: var(--primary-color);
+        }
+
+        .modal-tab.active {
+            color: var(--primary-color);
+            border-bottom-color: var(--primary-color);
+        }
+
+        .modal-tab-content {
+            display: none;
+        }
+
+        .modal-tab-content.active {
+            display: block;
+        }
+
+        /* Loading Overlay */
+        #loadingOverlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.3);
+            z-index: 3000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #loadingOverlay.active {
+            display: flex;
+        }
+
+        .spinner {
+            width: 48px;
+            height: 48px;
+            border: 4px solid rgba(26, 115, 232, 0.2);
+            border-top-color: var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Toast Notifications */
+        #toastContainer {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 3001;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-width: 400px;
+        }
+
+        .toast {
+            padding: 16px;
+            border-radius: var(--border-radius);
+            color: white;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            animation: slideInRight 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .toast.success {
+            background-color: var(--success-color);
+        }
+
+        .toast.error {
+            background-color: var(--danger-color);
+        }
+
+        .toast.info {
+            background-color: var(--info-color);
+        }
+
+        .toast.warning {
+            background-color: var(--warning-color);
+            color: var(--gray-800);
+        }
+
+        .toast-icon {
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+
+        .toast-message {
+            font-size: 13px;
+            flex: 1;
+        }
+
+        .toast-close {
+            background: none;
+            border: none;
+            color: inherit;
+            cursor: pointer;
+            font-size: 18px;
+            padding: 0;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1024px) {
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+
+            #sidebar {
+                width: 100%;
+                max-height: 56px;
+                overflow-x: auto;
+                border-right: none;
+                border-bottom: 1px solid var(--gray-200);
+                flex-direction: row;
+            }
+
+            .sidebar-header {
+                border-bottom: none;
+                border-right: 1px solid var(--gray-200);
+                padding: 8px 16px;
+            }
+
+            .sidebar-logo {
+                font-size: 14px;
+            }
+
+            .sidebar-logo-emoji {
+                font-size: 18px;
+            }
+
+            .sidebar-nav {
+                padding: 0;
+                display: flex;
+                flex: 1;
+            }
+
+            .nav-item {
+                padding: 8px 16px;
+                border-left: none;
+                border-bottom: 3px solid transparent;
+            }
+
+            .nav-item.active {
+                border-left: none;
+                border-bottom-color: var(--primary-color);
+            }
+
+            .sidebar-footer {
+                display: none;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .filter-row {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .content-area {
+                padding: 16px;
+            }
+
+            .modal {
+                width: 95%;
+                max-height: 90vh;
+            }
+
+            #toastContainer {
+                left: 10px;
+                right: 10px;
+                max-width: none;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .table-container {
+                overflow-x: auto;
+            }
+
+            table {
+                min-width: 500px;
+            }
+
+            .filter-btn {
+                font-size: 11px;
+                padding: 4px 8px;
+            }
+
+            .stat-value {
+                font-size: 24px;
+            }
+        }
+
+        /* Client Detail Area */
+        .client-detail-area,
+        #clientDetailArea {
+            background-color: white;
+            padding: 20px;
+            border-radius: var(--border-radius);
+            margin-top: 24px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+
+        /* Collection Summary */
+        .collection-summary {
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+            color: white;
+            padding: 24px;
+            border-radius: var(--border-radius);
+            margin-bottom: 24px;
+            box-shadow: 0 4px 12px rgba(26, 115, 232, 0.2);
+        }
+
+        .collection-summary h2 {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 16px;
+        }
+
+        .summary-items {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+        }
+
+        .summary-item {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+
+        .summary-label {
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+
+        .summary-value {
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        /* Settings Page */
+        .settings-form {
+            background-color: white;
+            padding: 24px;
+            border-radius: var(--border-radius);
+            max-width: 800px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+
+        .settings-section {
+            margin-bottom: 32px;
+            padding-bottom: 24px;
+            border-bottom: 1px solid var(--gray-200);
+        }
+
+        .settings-section:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+
+        .settings-section-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--gray-800);
+            margin-bottom: 16px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--primary-color);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 16px;
+        }
+
+        .form-full {
+            grid-column: 1 / -1;
+        }
+
+        .file-upload-area {
+            border: 2px dashed var(--gray-300);
+            border-radius: var(--border-radius);
+            padding: 20px;
+            text-align: center;
+            transition: var(--transition);
+            cursor: pointer;
+            background-color: var(--gray-50);
+        }
+
+        .file-upload-area:hover {
+            border-color: var(--primary-color);
+            background-color: var(--primary-light);
+        }
+
+        .file-upload-area input[type="file"] {
+            display: none;
+        }
+
+        .file-upload-text {
+            font-size: 12px;
+            color: var(--gray-600);
+            margin-bottom: 8px;
+        }
+
+        .file-upload-icon {
+            font-size: 28px;
+            margin-bottom: 8px;
+        }
+
+        .preview-area {
+            margin-top: 12px;
+            text-align: center;
+        }
+
+        .preview-image {
+            max-width: 100%;
+            max-height: 200px;
+            border-radius: 6px;
+        }
+
+        /* Danger Confirm Modal */
+        #dangerConfirmModal .modal {
+            max-width: 500px;
+        }
+
+        .danger-confirm-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+            display: block;
+        }
+
+        .danger-confirm-content {
+            text-align: center;
+        }
+
+        #dangerConfirmTitle {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--danger-color);
+            margin-bottom: 8px;
+        }
+
+        #dangerConfirmMsg {
+            font-size: 14px;
+            color: var(--gray-700);
+            margin-bottom: 4px;
+        }
+
+        #dangerConfirmSub {
+            font-size: 12px;
+            color: var(--gray-500);
+            margin-bottom: 16px;
+        }
+
+        .danger-confirm-input-group {
+            margin-bottom: 16px;
+            text-align: left;
+        }
+
+        .danger-confirm-input-group label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--gray-700);
+            display: block;
+            margin-bottom: 6px;
+        }
+
+        #dangerConfirmInput {
+            width: 100%;
+        }
+
+        /* Order Items Table */
+        .order-items-section {
+            margin-top: 24px;
+            padding-top: 24px;
+            border-top: 1px solid var(--gray-200);
+        }
+
+        .order-items-section h3 {
+            font-size: 14px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            color: var(--gray-800);
+        }
+
+        /* Collection Tracking */
+        .collection-tracking {
+            margin-top: 24px;
+            padding-top: 24px;
+            border-top: 1px solid var(--gray-200);
+        }
+
+        .collection-tracking h3 {
+            font-size: 14px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            color: var(--gray-800);
+        }
+
+        .collection-item {
+            padding: 16px;
+            background-color: var(--gray-50);
+            border-radius: 6px;
+            margin-bottom: 12px;
+        }
+
+        .collection-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .collection-item-title {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--gray-700);
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .collection-item-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 12px;
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 48px 24px;
+            color: var(--gray-500);
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+
+        .empty-state-text {
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+
+        .empty-state-subtext {
+            font-size: 12px;
+            color: var(--gray-400);
+        }
+
+        /* Action Bar */
+        .action-bar {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+
+        .action-bar .btn {
+            flex-shrink: 0;
+        }
+
+        /* Status Badge */
+        .status-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .status-badge.pending {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+
+        .status-badge.completed {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .status-badge.cancelled {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+
+        .status-badge.processing {
+            background-color: #d1ecf1;
+            color: #0c5460;
+        }
+
+        /* Currency Badge */
+        .currency-badge {
+            display: inline-block;
+            padding: 2px 6px;
+            background-color: var(--primary-light);
+            color: var(--primary-color);
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        /* Scrollbar Styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background-color: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background-color: var(--gray-300);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background-color: var(--gray-400);
+        }
+
+        /* Print Styles */
+        @media print {
+            body {
+                background-color: white;
+            }
+
+            .sidebar,
+            .header,
+            .action-bar,
+            .modal-overlay {
+                display: none;
+            }
+
+            .content-area {
+                padding: 0;
+            }
+
+            .table-container {
+                box-shadow: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Sidebar -->
+        <aside id="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo">
+                    <span class="sidebar-logo-emoji">📦</span>
+                    <span>수출 관리</span>
+                </div>
+            </div>
+            <nav class="sidebar-nav">
+                <div class="nav-item active" data-page="page-dashboard">
+                    <span class="nav-icon">📊</span>
+                    <span>대시보드</span>
+                </div>
+                <div class="nav-item" data-page="page-clients">
+                    <span class="nav-icon">👥</span>
+                    <span>거래처 관리</span>
+                </div>
+                <div class="nav-item" data-page="page-products">
+                    <span class="nav-icon">📦</span>
+                    <span>제품 관리</span>
+                </div>
+                <div class="nav-item" data-page="page-orders">
+                    <span class="nav-icon">📋</span>
+                    <span>수출 데이터</span>
+                </div>
+                <div class="nav-item" data-page="page-pi">
+                    <span class="nav-icon">📄</span>
+                    <span>Proforma Invoice</span>
+                </div>
+                <div class="nav-item" data-page="page-invoice">
+                    <span class="nav-icon">💰</span>
+                    <span>Commercial Invoice</span>
+                </div>
+                <div class="nav-item" data-page="page-packing">
+                    <span class="nav-icon">📦</span>
+                    <span>Packing List</span>
+                </div>
+                <div class="nav-item" data-page="page-collection">
+                    <span class="nav-icon">💳</span>
+                    <span>수금 관리</span>
+                </div>
+                <div class="nav-item" data-page="page-settings">
+                    <span class="nav-icon">⚙️</span>
+                    <span>회사 설정</span>
+                </div>
+                <div class="nav-item" data-page="page-users">
+                    <span class="nav-icon">👤</span>
+                    <span>User 관리자</span>
+                </div>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="user-info">
+                    <div class="user-name" id="loggedInUser">로그인 대기중</div>
+                    <div class="user-role-badge" id="userRoleBadge">USER</div>
+                </div>
+                <button class="logout-btn">로그아웃</button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <header class="header">
+                <span id="currentDate"></span>
+            </header>
+
+            <div class="content-area">
+                <!-- Dashboard Page -->
+                <div id="page-dashboard" class="page active">
+                    <div class="dashboard-filters">
+                        <div class="filter-row">
+                            <div class="filter-group">
+                                <span class="filter-label">기간:</span>
+                                <button class="filter-btn active" data-period="all">전체</button>
+                                <button class="filter-btn" data-period="month">이번 달</button>
+                                <button class="filter-btn" data-period="lastMonth">지난 달</button>
+                                <button class="filter-btn" data-period="quarter">이번 분기</button>
+                                <button class="filter-btn" data-period="year">올해</button>
+                                <button class="filter-btn" data-period="lastYear">작년</button>
+                                <button class="filter-btn" data-period="custom">직접 설정</button>
+                            </div>
+                        </div>
+                        <div id="customDateRange" class="filter-row" style="display: none;">
+                            <div class="filter-group">
+                                <span class="filter-label">시작:</span>
+                                <input type="date" id="dashDateFrom">
+                            </div>
+                            <div class="filter-group">
+                                <span class="filter-label">종료:</span>
+                                <input type="date" id="dashDateTo">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-label">총 수출 건수</div>
+                            <div class="stat-value" id="statTotalOrders">0</div>
+                            <div class="stat-unit">건</div>
+                            <div class="stat-change positive">↑ 12.5%</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">총 수출액</div>
+                            <div class="stat-value" id="statTotalRevenue">$0</div>
+                            <div class="stat-unit">USD</div>
+                            <div class="stat-change positive">↑ 8.2%</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">거래처 수</div>
+                            <div class="stat-value" id="statTotalClients">0</div>
+                            <div class="stat-unit">개</div>
+                            <div class="stat-change positive">↑ 3 개</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">미수금 현황</div>
+                            <div class="stat-value" id="statPendingOrders">$0</div>
+                            <div class="stat-unit">USD</div>
+                            <div class="stat-change negative">↑ 5.1%</div>
+                        </div>
+                    </div>
+
+                    <div class="analysis-selector">
+                        <button class="analysis-btn active" data-view="overview">종합 현황</button>
+                        <button class="analysis-btn" data-view="clients">거래처 분석</button>
+                        <button class="analysis-btn" data-view="products">제품 분석</button>
+                        <button class="analysis-btn" data-view="countries">국가별 분석</button>
+                        <button class="analysis-btn" data-view="trends">추이 분석</button>
+                    </div>
+
+                    <div id="dashChartsArea">
+                        <!-- Charts will be inserted here -->
+                    </div>
+
+                    <div class="table-container">
+                        <div class="table-header">
+                            <h3>최근 수출 거래</h3>
+                        </div>
+                        <div id="dashTableArea">
+                            <!-- Table will be inserted here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Clients Page -->
+                <div id="page-clients" class="page">
+                    <div class="action-bar">
+                        <button class="btn btn-primary">➕ 새 거래처 추가</button>
+                        <button class="btn btn-secondary">📥 Import</button>
+                        <button class="btn btn-secondary">📥 Export</button>
+                    </div>
+                    <div class="table-container">
+                        <div class="table-header">
+                            <h3>거래처 목록</h3>
+                        </div>
+                        <div id="clientsTable">
+                            <!-- Clients table will be inserted here -->
+                        </div>
+                    </div>
+                    <div id="clientDetailArea" class="client-detail-area" style="display: none;">
+                        <!-- Client detail form will be inserted here -->
+                    </div>
+                </div>
+
+                <!-- Products Page -->
+                <div id="page-products" class="page">
+                    <div class="action-bar">
+                        <button class="btn btn-primary">➕ 새 제품 추가</button>
+                        <button class="btn btn-secondary">📥 Import</button>
+                        <button class="btn btn-secondary">📥 Export</button>
+                    </div>
+                    <div class="table-container">
+                        <div class="table-header">
+                            <h3>제품 목록</h3>
+                        </div>
+                        <div id="productsTable">
+                            <!-- Products table will be inserted here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Orders Page -->
+                <div id="page-orders" class="page">
+                    <div class="action-bar">
+                        <button class="btn btn-primary">➕ 새 수출 거래 추가</button>
+                        <button class="btn btn-secondary">📥 Import</button>
+                        <button class="btn btn-secondary">📥 Export</button>
+                    </div>
+                    <div class="table-container">
+                        <div class="table-header">
+                            <h3>수출 데이터</h3>
+                        </div>
+                        <div id="ordersTable">
+                            <!-- Orders table will be inserted here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Collection Page -->
+                <div id="page-collection" class="page">
+                    <div id="collectionSummary" class="collection-summary">
+                        <h2>수금 현황 요약</h2>
+                        <div class="summary-items">
+                            <div class="summary-item">
+                                <div class="summary-label">전체 미수금</div>
+                                <div class="summary-value" id="collectionStats">$0</div>
+                            </div>
+                            <div class="summary-item">
+                                <div class="summary-label">이번 달 수금</div>
+                                <div class="summary-value">$0</div>
+                            </div>
+                            <div class="summary-item">
+                                <div class="summary-label">회수율</div>
+                                <div class="summary-value">0%</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="action-bar">
+                        <button class="btn btn-primary">➕ 수금 기록 추가</button>
+                    </div>
+                    <div class="table-container">
+                        <div class="table-header">
+                            <h3>수금 관리 목록</h3>
+                        </div>
+                        <div id="collectionTable">
+                            <!-- Collection table will be inserted here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PI Page -->
+                <div id="page-pi" class="page">
+                    <div class="action-bar">
+                        <button class="btn btn-primary">➕ 새 PI 생성</button>
+                    </div>
+                    <div class="table-container">
+                        <div class="table-header">
+                            <h3>Proforma Invoice 목록</h3>
+                        </div>
+                        <div id="piListTable">
+                            <!-- PI list table will be inserted here -->
+                        </div>
+                    </div>
+                    <div id="piPreviewArea" style="display: none;">
+                        <!-- PI preview will be inserted here -->
+                    </div>
+                </div>
+
+                <!-- Invoice Page -->
+                <div id="page-invoice" class="page">
+                    <div class="action-bar">
+                        <button class="btn btn-primary">➕ 새 Invoice 생성</button>
+                    </div>
+                    <div class="table-container">
+                        <div class="table-header">
+                            <h3>Commercial Invoice 목록</h3>
+                        </div>
+                        <div id="invoiceListTable">
+                            <!-- Invoice list table will be inserted here -->
+                        </div>
+                    </div>
+                    <div id="invoicePreviewArea" style="display: none;">
+                        <!-- Invoice preview will be inserted here -->
+                    </div>
+                </div>
+
+                <!-- Packing Page -->
+                <div id="page-packing" class="page">
+                    <div class="action-bar">
+                        <button class="btn btn-primary">➕ 새 Packing List 생성</button>
+                    </div>
+                    <div class="table-container">
+                        <div class="table-header">
+                            <h3>Packing List 목록</h3>
+                        </div>
+                        <div id="packingListTable">
+                            <!-- Packing list table will be inserted here -->
+                        </div>
+                    </div>
+                    <div id="packingPreviewArea" style="display: none;">
+                        <!-- Packing preview will be inserted here -->
+                    </div>
+                </div>
+
+                <!-- Settings Page -->
+                <div id="page-settings" class="page">
+                    <div class="settings-form">
+                        <div class="settings-section">
+                            <h3 class="settings-section-title">회사 정보</h3>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">회사명 (영문)</label>
+                                    <input type="text" id="companyName" placeholder="Company Name">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">회사명 (한글)</label>
+                                    <input type="text" id="companyNameKr" placeholder="회사명">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">대표자명</label>
+                                    <input type="text" id="companyCeo" placeholder="대표자명">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">사업자 등록번호</label>
+                                    <input type="text" id="companyRegNo" placeholder="123-45-67890">
+                                </div>
+                            </div>
+                            <div class="form-row form-full">
+                                <div class="form-group">
+                                    <label class="form-label">주소</label>
+                                    <input type="text" id="companyAddress" placeholder="회사 주소">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">전화</label>
+                                    <input type="tel" id="companyTel" placeholder="+82-2-XXXX-XXXX">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">팩스</label>
+                                    <input type="tel" id="companyFax" placeholder="+82-2-XXXX-XXXX">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">이메일</label>
+                                    <input type="email" id="companyEmail" placeholder="email@company.com">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">은행</label>
+                                    <input type="text" id="companyBank" placeholder="Bank Name">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="settings-section">
+                            <h3 class="settings-section-title">회사 로고 및 문서</h3>
+                            <div class="form-row">
+                                <div class="form-group form-full">
+                                    <label class="form-label">로고</label>
+                                    <div class="file-upload-area" id="logoUpload">
+                                        <div class="file-upload-icon">🖼️</div>
+                                        <div class="file-upload-text">로고 이미지를 드래그하거나 클릭하여 업로드</div>
+                                        <input type="file" accept="image/*">
+                                    </div>
+                                    <div class="preview-area">
+                                        <img id="logoPreview" class="preview-image" style="display: none;">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">서명</label>
+                                    <div class="file-upload-area" id="signatureUpload">
+                                        <div class="file-upload-icon">✍️</div>
+                                        <div class="file-upload-text">서명 이미지</div>
+                                        <input type="file" accept="image/*">
+                                    </div>
+                                    <div class="preview-area">
+                                        <img id="signaturePreview" class="preview-image" style="display: none;">
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">인감</label>
+                                    <div class="file-upload-area" id="stampUpload">
+                                        <div class="file-upload-icon">🔴</div>
+                                        <div class="file-upload-text">인감 이미지</div>
+                                        <input type="file" accept="image/*">
+                                    </div>
+                                    <div class="preview-area">
+                                        <img id="stampPreview" class="preview-image" style="display: none;">
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">팔레트 마크</label>
+                                    <div class="file-upload-area" id="palletMarkUpload">
+                                        <div class="file-upload-icon">📍</div>
+                                        <div class="file-upload-text">팔레트 마크</div>
+                                        <input type="file" accept="image/*">
+                                    </div>
+                                    <div class="preview-area">
+                                        <img id="palletMarkPreview" class="preview-image" style="display: none;">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="settings-section">
+                            <h3 class="settings-section-title">데이터 관리</h3>
+                            <div class="form-row form-full">
+                                <div class="form-group">
+                                    <label class="form-label">데이터 Import</label>
+                                    <input type="file" id="importFile" accept=".xlsx,.xls,.csv">
+                                </div>
+                            </div>
+                            <div class="action-bar">
+                                <button class="btn btn-secondary">💾 설정 저장</button>
+                                <button class="btn btn-secondary">📥 Export 데이터</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Users Page -->
+                <div id="page-users" class="page">
+                    <div class="action-bar">
+                        <button class="btn btn-primary">➕ 새 사용자 추가</button>
+                    </div>
+                    <div class="table-container">
+                        <div class="table-header">
+                            <h3>사용자 관리</h3>
+                        </div>
+                        <!-- Users table will be inserted here -->
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>사용자명</th>
+                                    <th>이메일</th>
+                                    <th>역할</th>
+                                    <th>상태</th>
+                                    <th>작업</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td colspan="5" class="empty-state">
+                                        <div class="empty-state-icon">👤</div>
+                                        <div class="empty-state-text">등록된 사용자가 없습니다</div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay">
+        <div class="spinner"></div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toastContainer"></div>
+
+    <!-- Danger Confirm Modal -->
+    <div id="dangerConfirmModal" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>작업 확인</h2>
+                <button class="modal-close-btn">&times;</button>
+            </div>
+            <div class="modal-body danger-confirm-content">
+                <span class="danger-confirm-icon">⚠️</span>
+                <div id="dangerConfirmTitle"></div>
+                <div id="dangerConfirmMsg"></div>
+                <div id="dangerConfirmSub"></div>
+                <div class="danger-confirm-input-group" style="display: none;">
+                    <label id="dangerConfirmKeyword"></label>
+                    <input type="text" id="dangerConfirmInput">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary">취소</button>
+                <button class="btn btn-danger" id="dangerConfirmBtn">확인</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Client Modal -->
+    <div id="clientModal" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>거래처 관리</h2>
+                <button class="modal-close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="clientEditId">
+                <div class="modal-tabs">
+                    <button class="modal-tab active" data-tab="basic">기본 정보</button>
+                    <button class="modal-tab" data-tab="pricing">가격 정보</button>
+                    <button class="modal-tab" data-tab="custom">사용자 정의</button>
+                    <button class="modal-tab" data-tab="terms">거래 조건</button>
+                </div>
+
+                <!-- Basic Tab -->
+                <div class="modal-tab-content active" data-tab="basic">
+                    <div class="form-group">
+                        <label class="form-label">회사명</label>
+                        <input type="text" id="clientCompany">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">국가</label>
+                            <input type="text" id="clientCountry">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">담당자</label>
+                            <input type="text" id="clientContact">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">직급</label>
+                            <input type="text" id="clientPosition">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">이메일</label>
+                            <input type="email" id="clientEmail">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">전화</label>
+                            <input type="tel" id="clientPhone">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">주소</label>
+                            <input type="text" id="clientAddress">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pricing Tab -->
+                <div class="modal-tab-content" data-tab="pricing">
+                    <div class="form-group">
+                        <label class="form-label">기본 통화</label>
+                        <select id="clientCurrency">
+                            <option>USD</option>
+                            <option>EUR</option>
+                            <option>KRW</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">가격 테이블</label>
+                        <div id="clientPricingTable" style="overflow-x: auto;">
+                            <table style="min-width: 100%; font-size: 12px;">
+                                <thead>
+                                    <tr>
+                                        <th>최소 수량</th>
+                                        <th>최대 수량</th>
+                                        <th>가격</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="clientPricingBody">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Custom Tab -->
+                <div class="modal-tab-content" data-tab="custom">
+                    <div class="form-group">
+                        <label class="form-label">사용자 정의 필드</label>
+                        <div id="clientCustomTable" style="overflow-x: auto;">
+                            <table style="min-width: 100%; font-size: 12px;">
+                                <thead>
+                                    <tr>
+                                        <th>필드명</th>
+                                        <th>값</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="clientCustomBody">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Terms Tab -->
+                <div class="modal-tab-content" data-tab="terms">
+                    <div class="form-group">
+                        <label class="form-label">결제 조건</label>
+                        <select id="clientPaymentTerms">
+                            <option>L/C</option>
+                            <option>T/T</option>
+                            <option>O/A</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Incoterms</label>
+                        <select id="clientIncoterms">
+                            <option>FOB</option>
+                            <option>CIF</option>
+                            <option>DDP</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">기본 항구</label>
+                        <input type="text" id="clientPort">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">비고</label>
+                        <textarea id="clientNotes" rows="4"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">PI 조건</label>
+                        <textarea id="clientPITerms" rows="3"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">CI 조건</label>
+                        <textarea id="clientCITerms" rows="3"></textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary">취소</button>
+                <button class="btn btn-primary">저장</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Product Modal -->
+    <div id="productModal" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>제품 관리</h2>
+                <button class="modal-close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="productEditId">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">제품 코드</label>
+                        <input type="text" id="productCode">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">하위 코드</label>
+                        <input type="text" id="productSubCode">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">사용자 정의 하위 코드</label>
+                    <input type="text" id="productSubCodeCustom">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">제품명</label>
+                    <input type="text" id="productName">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">상품명</label>
+                    <input type="text" id="productProduct">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">규격</label>
+                    <input type="text" id="productSpec">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">단위</label>
+                        <input type="text" id="productUnit">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">HS 코드</label>
+                        <input type="text" id="productHsCode">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">유효기간 (개월)</label>
+                        <input type="number" id="productExpDate">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">기본 가격 (USD)</label>
+                        <input type="number" id="productPriceUSD" step="0.01">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">기본 가격 (EUR)</label>
+                        <input type="number" id="productPriceEUR" step="0.01">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">순 무게 (kg)</label>
+                        <input type="number" id="productNetWeight" step="0.01">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">총 무게 (kg)</label>
+                        <input type="number" id="productGrossWeight" step="0.01">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">입방 미터</label>
+                        <input type="number" id="productCBM" step="0.01">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">설명</label>
+                    <textarea id="productDesc" rows="4"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary">취소</button>
+                <button class="btn btn-primary">저장</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Order Modal -->
+    <div id="orderModal" class="modal-overlay">
+        <div class="modal" style="max-width: 900px;">
+            <div class="modal-header">
+                <h2>수출 거래</h2>
+                <button class="modal-close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="orderEditId">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">주문 번호</label>
+                        <input type="text" id="orderNumber">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">주문 날짜</label>
+                        <input type="date" id="orderDate">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">상태</label>
+                        <select id="orderStatus">
+                            <option>계획</option>
+                            <option>생산중</option>
+                            <option>완료</option>
+                            <option>배송중</option>
+                            <option>수령</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">거래처</label>
+                        <input type="text" id="orderClient">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">통화</label>
+                        <select id="orderCurrency">
+                            <option>USD</option>
+                            <option>EUR</option>
+                            <option>KRW</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">결제 조건</label>
+                        <select id="orderPaymentTerms">
+                            <option>L/C</option>
+                            <option>T/T</option>
+                            <option>O/A</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Incoterms</label>
+                        <select id="orderIncoterms">
+                            <option>FOB</option>
+                            <option>CIF</option>
+                            <option>DDP</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">항구</label>
+                        <input type="text" id="orderPort">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">비고</label>
+                    <textarea id="orderRemarks" rows="2"></textarea>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">생산 날짜</label>
+                        <input type="date" id="orderProductionDate">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">살균 날짜</label>
+                        <input type="date" id="orderSterilizeDate">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">배송 날짜</label>
+                        <input type="date" id="orderShipDate">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">환율</label>
+                        <input type="number" id="orderExchangeRate" step="0.01">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">KRW 금액</label>
+                        <input type="number" id="orderKRWAmount" step="0.01">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">배송료</label>
+                        <input type="number" id="orderShippingCost" step="0.01">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">수수료 1</label>
+                        <input type="number" id="orderFee1" step="0.01">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">수수료 2</label>
+                        <input type="number" id="orderFee2" step="0.01">
+                    </div>
+                </div>
+
+                <div class="order-items-section">
+                    <h3>제품 항목</h3>
+                    <div id="orderItemsTable" style="overflow-x: auto;">
+                        <table style="min-width: 100%; font-size: 12px;">
+                            <thead>
+                                <tr>
+                                    <th>제품</th>
+                                    <th>수량</th>
+                                    <th>단가</th>
+                                    <th>소계</th>
+                                </tr>
+                            </thead>
+                            <tbody id="orderItemsBody">
+                            </tbody>
+                        </table>
+                    </div>
+                    <div style="text-align: right; margin-top: 12px; font-weight: 700;">
+                        총액: <span id="orderTotalAmount">$0</span>
+                    </div>
+                </div>
+
+                <div class="collection-tracking">
+                    <h3>수금 기록</h3>
+
+                    <div class="collection-item">
+                        <div class="collection-item-title">1차 수금</div>
+                        <div class="collection-item-grid">
+                            <div class="form-group">
+                                <label class="form-label">수금 날짜</label>
+                                <input type="date" id="orderCol1Date">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">수금액</label>
+                                <input type="number" id="orderCol1Amount" step="0.01">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">수수료1</label>
+                                <input type="number" id="orderCol1Fee1" step="0.01">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">수수료2</label>
+                                <input type="number" id="orderCol1Fee2" step="0.01">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">환율</label>
+                                <input type="number" id="orderCol1Rate" step="0.01">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">KRW 금액</label>
+                                <input type="number" id="orderCol1KRW" step="0.01">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="collection-item">
+                        <div class="collection-item-title">2차 수금</div>
+                        <div class="collection-item-grid">
+                            <div class="form-group">
+                                <label class="form-label">수금 날짜</label>
+                                <input type="date" id="orderCol2Date">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">수금액</label>
+                                <input type="number" id="orderCol2Amount" step="0.01">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">수수료1</label>
+                                <input type="number" id="orderCol2Fee1" step="0.01">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">수수료2</label>
+                                <input type="number" id="orderCol2Fee2" step="0.01">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">환율</label>
+                                <input type="number" id="orderCol2Rate" step="0.01">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">KRW 금액</label>
+                                <input type="number" id="orderCol2KRW" step="0.01">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="background-color: var(--gray-50); padding: 16px; border-radius: 6px; margin-top: 12px; display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px;">
+                        <div>
+                            <div style="font-size: 11px; color: var(--gray-600); margin-bottom: 4px;">총 수금액</div>
+                            <div style="font-size: 18px; font-weight: 700; color: var(--primary-color);" id="orderColTotal">$0</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 11px; color: var(--gray-600); margin-bottom: 4px;">총 KRW</div>
+                            <div style="font-size: 18px; font-weight: 700; color: var(--primary-color);" id="orderColKRWTotal">₩0</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 11px; color: var(--gray-600); margin-bottom: 4px;">잔액</div>
+                            <div style="font-size: 18px; font-weight: 700; color: var(--danger-color);" id="orderBalance">$0</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 11px; color: var(--gray-600); margin-bottom: 4px;">수금률</div>
+                            <div style="font-size: 18px; font-weight: 700; color: var(--success-color);" id="orderBalancePct">0%</div>
+                        </div>
+                    </div>
+
+                    <div class="form-group" style="margin-top: 12px;">
+                        <label class="form-label">수금 비고</label>
+                        <textarea id="orderCollectionNote" rows="2"></textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary">취소</button>
+                <button class="btn btn-primary">저장</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- PI Modal -->
+    <div id="piModal" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>Proforma Invoice</h2>
+                <button class="modal-close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="piEditId">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">PI 번호</label>
+                        <input type="text" id="piNumber">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">발행 날짜</label>
+                        <input type="date" id="piDate">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">유효기간</label>
+                        <input type="date" id="piValidity">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">거래처</label>
+                        <input type="text" id="piClient">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">주문 연결</label>
+                        <input type="text" id="piFromOrder">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">통화</label>
+                        <select id="piCurrency">
+                            <option>USD</option>
+                            <option>EUR</option>
+                            <option>KRW</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">결제 조건</label>
+                        <select id="piPaymentTerms">
+                            <option>L/C</option>
+                            <option>T/T</option>
+                            <option>O/A</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Incoterms</label>
+                        <select id="piIncoterms">
+                            <option>FOB</option>
+                            <option>CIF</option>
+                            <option>DDP</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">항구</label>
+                    <input type="text" id="piPort">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary">취소</button>
+                <button class="btn btn-primary">저장</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ========================================
+        // GLOBAL STATE & CONFIGURATION
+        // ========================================
+        const API_URL = 'https://script.google.com/macros/s/AKfycbzvAKvtrZl1Hk3chwa-yF24XCpdbriKajMC5YKXyBBchRMalEid2ebZHJfmxcQTCQSnQQ/exec';
+        
+        let appState = {
+            currentUser: null,
+            currentRole: null,
+            clients: [],
+            products: [],
+            orders: [],
+            settings: {},
+            chartInstances: {},
+            editingId: null
+        };
+
+        // ========================================
+        // INITIALIZATION
+        // ========================================
+        document.addEventListener('DOMContentLoaded', initApp);
+
+        async function initApp() {
+            checkAuth();
+            setCurrentDate();
+            setupEventListeners();
+            await loadAllData();
+            hideLoading();
+        }
+
+        function checkAuth() {
+            const username = sessionStorage.getItem('username');
+            const displayName = sessionStorage.getItem('displayName');
+            const userRole = sessionStorage.getItem('userRole');
+
+            if (!username) {
+                window.location.href = 'index.html';
+                return;
+            }
+
+            appState.currentUser = username;
+            appState.currentRole = userRole || 'USER';
+            
+            document.getElementById('loggedInUser').textContent = displayName || username;
+            document.getElementById('userRoleBadge').textContent = userRole === 'ADMIN' ? '관리자' : '일반';
+        }
+
+        function setCurrentDate() {
+            const today = new Date();
+            const formatter = new Intl.DateTimeFormat('ko-KR', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                weekday: 'long'
+            });
+            document.getElementById('currentDate').textContent = formatter.format(today);
+        }
+
+        function setupEventListeners() {
+            // Navigation
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    const pageId = item.getAttribute('data-page');
+                    showPage(pageId);
+                });
+            });
+
+            // Logout
+            document.querySelector('.logout-btn').addEventListener('click', logout);
+
+            // Dashboard filters
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                    e.target.classList.add('active');
+                    
+                    if (e.target.getAttribute('data-period') === 'custom') {
+                        document.getElementById('customDateRange').style.display = 'flex';
+                    } else {
+                        document.getElementById('customDateRange').style.display = 'none';
+                    }
+                    updateDashboard();
+                });
+            });
+
+            // Analysis selectors
+            document.querySelectorAll('.analysis-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    document.querySelectorAll('.analysis-btn').forEach(b => b.classList.remove('active'));
+                    e.target.classList.add('active');
+                    renderDashboardCharts();
+                });
+            });
+
+            // Modal close buttons
+            document.querySelectorAll('.modal-close-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const modal = e.target.closest('.modal-overlay');
+                    modal.classList.remove('active');
+                });
+            });
+
+            // Modal tabs
+            document.querySelectorAll('.modal-tab').forEach(tab => {
+                tab.addEventListener('click', (e) => {
+                    const tabName = e.target.getAttribute('data-tab');
+                    const modal = e.target.closest('.modal');
+                    
+                    modal.querySelectorAll('.modal-tab').forEach(t => t.classList.remove('active'));
+                    modal.querySelectorAll('.modal-tab-content').forEach(c => c.classList.remove('active'));
+                    
+                    e.target.classList.add('active');
+                    modal.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+                    modal.querySelector(`.modal-tab-content[data-tab="${tabName}"]`).classList.add('active');
+                });
+            });
+
+            // Clients page
+            document.getElementById('page-clients').querySelector('.btn-primary')?.addEventListener('click', () => showClientModal());
+            
+            // Products page
+            document.getElementById('page-products').querySelector('.btn-primary')?.addEventListener('click', () => showProductModal());
+            
+            // Orders page
+            document.getElementById('page-orders').querySelector('.btn-primary')?.addEventListener('click', () => showOrderModal());
+
+            // Modal footer buttons
+            setupModalActions();
+        }
+
+        function setupModalActions() {
+            // Client Modal
+            const clientModal = document.getElementById('clientModal');
+            if (clientModal) {
+                const saveBtn = clientModal.querySelector('.modal-footer .btn-primary');
+                const cancelBtn = clientModal.querySelector('.modal-footer .btn-secondary');
+                
+                saveBtn?.addEventListener('click', saveClient);
+                cancelBtn?.addEventListener('click', () => clientModal.classList.remove('active'));
+            }
+
+            // Product Modal
+            const productModal = document.getElementById('productModal');
+            if (productModal) {
+                const saveBtn = productModal.querySelector('.modal-footer .btn-primary');
+                const cancelBtn = productModal.querySelector('.modal-footer .btn-secondary');
+                
+                saveBtn?.addEventListener('click', saveProduct);
+                cancelBtn?.addEventListener('click', () => productModal.classList.remove('active'));
+            }
+
+            // Order Modal
+            const orderModal = document.getElementById('orderModal');
+            if (orderModal) {
+                const saveBtn = orderModal.querySelector('.modal-footer .btn-primary');
+                const cancelBtn = orderModal.querySelector('.modal-footer .btn-secondary');
+                
+                saveBtn?.addEventListener('click', saveOrder);
+                cancelBtn?.addEventListener('click', () => orderModal.classList.remove('active'));
+            }
+
+            // PI Modal
+            const piModal = document.getElementById('piModal');
+            if (piModal) {
+                const saveBtn = piModal.querySelector('.modal-footer .btn-primary');
+                const cancelBtn = piModal.querySelector('.modal-footer .btn-secondary');
+                
+                saveBtn?.addEventListener('click', savePI);
+                cancelBtn?.addEventListener('click', () => piModal.classList.remove('active'));
+            }
+        }
+
+        // ========================================
+        // API FUNCTIONS
+        // ========================================
+        async function apiCall(action, params = {}) {
+            try {
+                const queryStr = new URLSearchParams({ action, ...params }).toString();
+                const response = await fetch(`${API_URL}?${queryStr}`, {
+                    method: 'GET',
+                    mode: 'cors',
+                    redirect: 'follow'
+                });
+                const data = await response.json();
+                return data;
+            } catch (error) {
+                console.error('API Error:', error);
+                showToast('API 연결 오류: ' + error.message, 'error');
+                return null;
+            }
+        }
+
+        async function apiPost(action, data) {
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    mode: 'cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action, data })
+                });
+                const result = await response.json();
+                return result;
+            } catch (error) {
+                console.error('API Error:', error);
+                showToast('저장 오류: ' + error.message, 'error');
+                return null;
+            }
+        }
+
+        async function loadAllData() {
+            showLoading();
+            const result = await apiCall('getAll');
+            
+            if (result) {
+                appState.clients = result.clients || [];
+                appState.products = result.products || [];
+                appState.orders = result.orders || [];
+                appState.settings = result.settings || {};
+            }
+            
+            updateDashboard();
+            renderClientsPage();
+            renderProductsPage();
+            renderOrdersPage();
+            renderCollectionPage();
+            hideLoading();
+        }
+
+        // ========================================
+        // UI NAVIGATION
+        // ========================================
+        function showPage(pageId) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            
+            const page = document.getElementById(pageId);
+            const navItem = document.querySelector(`[data-page="${pageId}"]`);
+            
+            if (page) page.classList.add('active');
+            if (navItem) navItem.classList.add('active');
+        }
+
+        function showLoading() {
+            document.getElementById('loadingOverlay').classList.add('active');
+        }
+
+        function hideLoading() {
+            document.getElementById('loadingOverlay').classList.remove('active');
+        }
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer') || createToastContainer();
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            
+            const icons = {
+                success: '✓',
+                error: '✕',
+                warning: '⚠',
+                info: 'ℹ'
+            };
+            
+            toast.innerHTML = `
+                <span class="toast-icon">${icons[type]}</span>
+                <span class="toast-message">${message}</span>
+                <button class="toast-close">&times;</button>
+            `;
+            
+            container.appendChild(toast);
+            
+            toast.querySelector('.toast-close').addEventListener('click', () => {
+                toast.remove();
+            });
+            
+            setTimeout(() => {
+                toast.remove();
+            }, 4000);
+        }
+
+        function createToastContainer() {
+            const container = document.createElement('div');
+            container.id = 'toastContainer';
+            document.body.appendChild(container);
+            return container;
+        }
+
+        function logout() {
+            sessionStorage.clear();
+            window.location.href = 'index.html';
+        }
+
+        // ========================================
+        // DASHBOARD PAGE
+        // ========================================
+        function updateDashboard() {
+            updateDashboardStats();
+            renderDashboardCharts();
+            renderDashboardTable();
+        }
+
+        function getFilteredOrders() {
+            const activePeriod = document.querySelector('.filter-btn.active').getAttribute('data-period');
+            const today = new Date();
+            let filtered = [...appState.orders];
+
+            if (activePeriod !== 'all') {
+                filtered = filtered.filter(order => {
+                    const orderDate = new Date(order.orderDate);
+                    
+                    switch (activePeriod) {
+                        case 'month':
+                            return orderDate.getMonth() === today.getMonth() && 
+                                   orderDate.getFullYear() === today.getFullYear();
+                        case 'lastMonth':
+                            const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1);
+                            return orderDate.getMonth() === lastMonth.getMonth() && 
+                                   orderDate.getFullYear() === lastMonth.getFullYear();
+                        case 'quarter':
+                            const quarter = Math.floor(today.getMonth() / 3);
+                            const orderQuarter = Math.floor(orderDate.getMonth() / 3);
+                            return orderQuarter === quarter && orderDate.getFullYear() === today.getFullYear();
+                        case 'year':
+                            return orderDate.getFullYear() === today.getFullYear();
+                        case 'lastYear':
+                            return orderDate.getFullYear() === today.getFullYear() - 1;
+                        case 'custom':
+                            const from = document.getElementById('dashDateFrom').value;
+                            const to = document.getElementById('dashDateTo').value;
+                            if (from && to) {
+                                return orderDate >= new Date(from) && orderDate <= new Date(to);
+                            }
+                            return true;
+                        default:
+                            return true;
+                    }
+                });
+            }
+
+            return filtered;
+        }
+
+        function updateDashboardStats() {
+            const filtered = getFilteredOrders();
+            
+            const totalOrders = filtered.length;
+            const totalRevenue = filtered.reduce((sum, order) => sum + (parseFloat(order.totalAmount) || 0), 0);
+            const uniqueClients = new Set(filtered.map(o => o.clientId)).size;
+            const pendingAmount = filtered.reduce((sum, order) => {
+                const collected = (parseFloat(order.col1Amount) || 0) + (parseFloat(order.col2Amount) || 0);
+                return sum + Math.max(0, (parseFloat(order.totalAmount) || 0) - collected);
+            }, 0);
+
+            document.getElementById('statTotalOrders').textContent = totalOrders;
+            document.getElementById('statTotalRevenue').textContent = formatCurrency(totalRevenue, 'USD');
+            document.getElementById('statTotalClients').textContent = uniqueClients;
+            document.getElementById('statPendingOrders').textContent = formatCurrency(pendingAmount, 'USD');
+        }
+
+        function renderDashboardCharts() {
+            const activeView = document.querySelector('.analysis-btn.active').getAttribute('data-view');
+            const chartsArea = document.getElementById('dashChartsArea');
+            chartsArea.innerHTML = '';
+
+            const filtered = getFilteredOrders();
+
+            switch (activeView) {
+                case 'overview':
+                    renderOverviewChart(filtered, chartsArea);
+                    break;
+                case 'clients':
+                    renderClientsChart(filtered, chartsArea);
+                    break;
+                case 'products':
+                    renderProductsChart(filtered, chartsArea);
+                    break;
+                case 'countries':
+                    renderCountriesChart(filtered, chartsArea);
+                    break;
+                case 'trends':
+                    renderTrendsChart(filtered, chartsArea);
+                    break;
+            }
+        }
+
+        function renderOverviewChart(orders, container) {
+            const monthlyData = {};
+            
+            orders.forEach(order => {
+                const date = new Date(order.orderDate);
+                const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+                monthlyData[key] = (monthlyData[key] || 0) + (parseFloat(order.totalAmount) || 0);
+            });
+
+            const labels = Object.keys(monthlyData).sort();
+            const data = labels.map(k => monthlyData[k]);
+
+            const canvas = document.createElement('canvas');
+            canvas.id = 'overviewChart';
+            container.appendChild(canvas);
+
+            const ctx = canvas.getContext('2d');
+            if (appState.chartInstances['overview']) appState.chartInstances['overview'].destroy();
+            
+            appState.chartInstances['overview'] = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels,
+                    datasets: [{
+                        label: '월별 수출액 (USD)',
+                        data,
+                        backgroundColor: 'rgba(26, 115, 232, 0.7)',
+                        borderColor: 'rgb(26, 115, 232)',
+                        borderWidth: 1,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { display: true, position: 'top' } },
+                    scales: {
+                        y: { beginAtZero: true, ticks: { callback: (v) => '$' + v.toLocaleString() } }
+                    }
+                }
+            });
+        }
+
+        function renderClientsChart(orders, container) {
+            const clientData = {};
+            
+            orders.forEach(order => {
+                const clientId = order.clientId || 'Unknown';
+                const client = appState.clients.find(c => c.id === clientId);
+                const name = client ? client.name : clientId;
+                clientData[name] = (clientData[name] || 0) + (parseFloat(order.totalAmount) || 0);
+            });
+
+            const labels = Object.keys(clientData);
+            const data = Object.values(clientData);
+
+            const canvas = document.createElement('canvas');
+            canvas.id = 'clientsChart';
+            container.appendChild(canvas);
+
+            const ctx = canvas.getContext('2d');
+            if (appState.chartInstances['clients']) appState.chartInstances['clients'].destroy();
+            
+            appState.chartInstances['clients'] = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels,
+                    datasets: [{
+                        data,
+                        backgroundColor: [
+                            '#1a73e8', '#34a853', '#fbbc04', '#d33b27', '#ea4335',
+                            '#4285f4', '#0f9d58', '#f9ab00', '#d93025', '#188edf'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { position: 'right' },
+                        tooltip: { callbacks: { label: (ctx) => ctx.label + ': $' + ctx.parsed.toLocaleString() } }
+                    }
+                }
+            });
+        }
+
+        function renderProductsChart(orders, container) {
+            const productData = {};
+            
+            orders.forEach(order => {
+                if (order.items && Array.isArray(order.items)) {
+                    order.items.forEach(item => {
+                        const product = appState.products.find(p => p.id === item.productId);
+                        const name = product ? product.name : item.productId;
+                        productData[name] = (productData[name] || 0) + (parseFloat(item.quantity) || 0);
+                    });
+                }
+            });
+
+            const labels = Object.keys(productData);
+            const data = Object.values(productData);
+
+            const canvas = document.createElement('canvas');
+            canvas.id = 'productsChart';
+            container.appendChild(canvas);
+
+            const ctx = canvas.getContext('2d');
+            if (appState.chartInstances['products']) appState.chartInstances['products'].destroy();
+            
+            appState.chartInstances['products'] = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels,
+                    datasets: [{
+                        label: '판매 수량',
+                        data,
+                        backgroundColor: 'rgba(52, 168, 83, 0.7)',
+                        borderColor: 'rgb(52, 168, 83)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    plugins: { legend: { display: true, position: 'top' } }
+                }
+            });
+        }
+
+        function renderCountriesChart(orders, container) {
+            const countryData = {};
+            
+            orders.forEach(order => {
+                const client = appState.clients.find(c => c.id === order.clientId);
+                const country = client ? (client.country || 'Unknown') : 'Unknown';
+                countryData[country] = (countryData[country] || 0) + (parseFloat(order.totalAmount) || 0);
+            });
+
+            const labels = Object.keys(countryData);
+            const data = Object.values(countryData);
+
+            const canvas = document.createElement('canvas');
+            canvas.id = 'countriesChart';
+            container.appendChild(canvas);
+
+            const ctx = canvas.getContext('2d');
+            if (appState.chartInstances['countries']) appState.chartInstances['countries'].destroy();
+            
+            appState.chartInstances['countries'] = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels,
+                    datasets: [{
+                        data,
+                        backgroundColor: ['#1a73e8', '#34a853', '#fbbc04', '#d33b27', '#ea4335']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { position: 'right' },
+                        tooltip: { callbacks: { label: (ctx) => ctx.label + ': $' + ctx.parsed.toLocaleString() } }
+                    }
+                }
+            });
+        }
+
+        function renderTrendsChart(orders, container) {
+            const trends = {};
+            
+            orders.forEach(order => {
+                const date = new Date(order.orderDate);
+                const key = date.toISOString().split('T')[0];
+                trends[key] = (trends[key] || 0) + (parseFloat(order.totalAmount) || 0);
+            });
+
+            const labels = Object.keys(trends).sort();
+            const data = labels.map(k => trends[k]);
+
+            const canvas = document.createElement('canvas');
+            canvas.id = 'trendsChart';
+            container.appendChild(canvas);
+
+            const ctx = canvas.getContext('2d');
+            if (appState.chartInstances['trends']) appState.chartInstances['trends'].destroy();
+            
+            appState.chartInstances['trends'] = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels,
+                    datasets: [{
+                        label: '일별 수출액 (USD)',
+                        data,
+                        borderColor: '#1a73e8',
+                        backgroundColor: 'rgba(26, 115, 232, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { display: true, position: 'top' } },
+                    scales: {
+                        y: { beginAtZero: true, ticks: { callback: (v) => '$' + v.toLocaleString() } }
+                    }
+                }
+            });
+        }
+
+        function renderDashboardTable() {
+            const filtered = getFilteredOrders();
+            const tableArea = document.getElementById('dashTableArea');
+            
+            if (filtered.length === 0) {
+                tableArea.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📭</div><div class="empty-state-text">데이터가 없습니다</div></div>';
+                return;
+            }
+
+            let html = `<table style="width: 100%; font-size: 13px;">
+                <thead>
+                    <tr style="background-color: var(--gray-100);">
+                        <th style="padding: 12px; text-align: left;">주문번호</th>
+                        <th style="padding: 12px; text-align: left;">거래처</th>
+                        <th style="padding: 12px; text-align: left;">금액</th>
+                        <th style="padding: 12px; text-align: left;">상태</th>
+                        <th style="padding: 12px; text-align: left;">수금률</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+
+            filtered.forEach(order => {
+                const client = appState.clients.find(c => c.id === order.clientId);
+                const clientName = client ? client.name : order.clientId;
+                const collected = (parseFloat(order.col1Amount) || 0) + (parseFloat(order.col2Amount) || 0);
+                const total = parseFloat(order.totalAmount) || 0;
+                const percentage = total > 0 ? Math.round((collected / total) * 100) : 0;
+
+                html += `
+                    <tr style="border-bottom: 1px solid var(--gray-200);">
+                        <td style="padding: 12px;">${order.orderNumber || '-'}</td>
+                        <td style="padding: 12px;">${clientName}</td>
+                        <td style="padding: 12px;">$${total.toLocaleString()}</td>
+                        <td style="padding: 12px;"><span class="status-badge pending">${order.status || '계획'}</span></td>
+                        <td style="padding: 12px;"><strong style="color: var(--success-color);">${percentage}%</strong></td>
+                    </tr>`;
+            });
+
+            html += '</tbody></table>';
+            tableArea.innerHTML = html;
+        }
+
+        // ========================================
+        // CLIENTS PAGE
+        // ========================================
+        function renderClientsPage() {
+            const clientsTable = document.getElementById('clientsTable');
+            
+            if (appState.clients.length === 0) {
+                clientsTable.innerHTML = '<div class="empty-state"><div class="empty-state-icon">👥</div><div class="empty-state-text">등록된 거래처가 없습니다</div></div>';
+                return;
+            }
+
+            let html = `<table style="width: 100%; font-size: 13px;">
+                <thead>
+                    <tr style="background-color: var(--gray-100);">
+                        <th style="padding: 12px; text-align: left;">거래처명</th>
+                        <th style="padding: 12px; text-align: left;">국가</th>
+                        <th style="padding: 12px; text-align: left;">이메일</th>
+                        <th style="padding: 12px; text-align: left;">전화</th>
+                        <th style="padding: 12px; text-align: center;">작업</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+
+            appState.clients.forEach(client => {
+                html += `
+                    <tr style="border-bottom: 1px solid var(--gray-200); cursor: pointer;" class="client-row" data-id="${client.id}">
+                        <td style="padding: 12px;">${client.name}</td>
+                        <td style="padding: 12px;">${client.country || '-'}</td>
+                        <td style="padding: 12px;">${client.email || '-'}</td>
+                        <td style="padding: 12px;">${client.phone || '-'}</td>
+                        <td style="padding: 12px; text-align: center;">
+                            <button class="btn btn-sm" onclick="editClient('${client.id}')">수정</button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteClientConfirm('${client.id}')">삭제</button>
+                        </td>
+                    </tr>`;
+            });
+
+            html += '</tbody></table>';
+            clientsTable.innerHTML = html;
+
+            document.querySelectorAll('.client-row').forEach(row => {
+                row.addEventListener('click', (e) => {
+                    if (!e.target.closest('button')) {
+                        const clientId = e.currentTarget.getAttribute('data-id');
+                        showClientDetail(clientId);
+                    }
+                });
+            });
+        }
+
+        function showClientDetail(clientId) {
+            const client = appState.clients.find(c => c.id === clientId);
+            if (!client) return;
+
+            const detailArea = document.getElementById('clientDetailArea');
+            detailArea.innerHTML = `
+                <h3>${client.name}</h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; margin-top: 16px;">
+                    <div><strong>국가:</strong> ${client.country || '-'}</div>
+                    <div><strong>이메일:</strong> ${client.email || '-'}</div>
+                    <div><strong>전화:</strong> ${client.phone || '-'}</div>
+                    <div><strong>주소:</strong> ${client.address || '-'}</div>
+                    <div><strong>결제 조건:</strong> ${client.paymentTerms || '-'}</div>
+                    <div><strong>Incoterms:</strong> ${client.incoterms || '-'}</div>
+                </div>
+            `;
+            detailArea.style.display = 'block';
+        }
+
+        function showClientModal(clientId = null) {
+            const modal = document.getElementById('clientModal');
+            const editIdInput = document.getElementById('clientEditId');
+            
+            if (clientId) {
+                const client = appState.clients.find(c => c.id === clientId);
+                if (!client) return;
+                
+                editIdInput.value = client.id;
+                document.getElementById('clientName').value = client.name || '';
+                document.getElementById('clientCountry').value = client.country || '';
+                document.getElementById('clientEmail').value = client.email || '';
+                document.getElementById('clientPhone').value = client.phone || '';
+                document.getElementById('clientAddress').value = client.address || '';
+                document.getElementById('clientCurrency').value = client.currency || 'USD';
+                document.getElementById('clientPaymentTerms').value = client.paymentTerms || 'L/C';
+                document.getElementById('clientIncoterms').value = client.incoterms || 'FOB';
+                document.getElementById('clientPort').value = client.port || '';
+                document.getElementById('clientNotes').value = client.notes || '';
+                document.getElementById('clientPITerms').value = client.piTerms || '';
+                document.getElementById('clientCITerms').value = client.ciTerms || '';
+            } else {
+                editIdInput.value = '';
+                modal.querySelectorAll('input, textarea, select').forEach(el => el.value = '');
+            }
+            
+            // Set first tab as active
+            modal.querySelectorAll('.modal-tab').forEach(t => t.classList.remove('active'));
+            modal.querySelectorAll('.modal-tab-content').forEach(c => c.classList.remove('active'));
+            modal.querySelector('.modal-tab').classList.add('active');
+            modal.querySelector('.modal-tab-content').classList.add('active');
+            
+            modal.classList.add('active');
+        }
+
+        function editClient(clientId) {
+            showClientModal(clientId);
+        }
+
+        async function saveClient() {
+            const editId = document.getElementById('clientEditId').value;
+            const clientData = {
+                id: editId || 'client_' + Date.now(),
+                name: document.getElementById('clientName').value,
+                country: document.getElementById('clientCountry').value,
+                email: document.getElementById('clientEmail').value,
+                phone: document.getElementById('clientPhone').value,
+                address: document.getElementById('clientAddress').value,
+                currency: document.getElementById('clientCurrency').value,
+                paymentTerms: document.getElementById('clientPaymentTerms').value,
+                incoterms: document.getElementById('clientIncoterms').value,
+                port: document.getElementById('clientPort').value,
+                notes: document.getElementById('clientNotes').value,
+                piTerms: document.getElementById('clientPITerms').value,
+                ciTerms: document.getElementById('clientCITerms').value
+            };
+
+            const result = await apiPost('saveClient', clientData);
+            if (result && result.success) {
+                showToast('거래처가 저장되었습니다', 'success');
+                document.getElementById('clientModal').classList.remove('active');
+                await loadAllData();
+            } else {
+                showToast('저장에 실패했습니다', 'error');
+            }
+        }
+
+        function deleteClientConfirm(clientId) {
+            const confirmModal = document.getElementById('dangerConfirmModal') || createDangerConfirmModal();
+            confirmModal.classList.add('active');
+            
+            const confirmBtn = confirmModal.querySelector('.btn-danger');
+            confirmBtn.onclick = () => deleteClient(clientId);
+        }
+
+        async function deleteClient(clientId) {
+            const result = await apiPost('deleteClient', { id: clientId });
+            if (result && result.success) {
+                showToast('거래처가 삭제되었습니다', 'success');
+                document.getElementById('dangerConfirmModal').classList.remove('active');
+                await loadAllData();
+            } else {
+                showToast('삭제에 실패했습니다', 'error');
+            }
+        }
+
+        function createDangerConfirmModal() {
+            const modal = document.createElement('div');
+            modal.id = 'dangerConfirmModal';
+            modal.className = 'modal-overlay';
+            modal.innerHTML = `
+                <div class="modal">
+                    <div class="modal-header">
+                        <h2>확인</h2>
+                        <button class="modal-close-btn">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <p>정말로 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-secondary" onclick="document.getElementById('dangerConfirmModal').classList.remove('active')">취소</button>
+                        <button class="btn btn-danger">확인</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            return modal;
+        }
+
+        // ========================================
+        // PRODUCTS PAGE
+        // ========================================
+        function renderProductsPage() {
+            const productsTable = document.getElementById('productsTable');
+            
+            if (appState.products.length === 0) {
+                productsTable.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📦</div><div class="empty-state-text">등록된 제품이 없습니다</div></div>';
+                return;
+            }
+
+            let html = `<table style="width: 100%; font-size: 12px;">
+                <thead>
+                    <tr style="background-color: var(--gray-100);">
+                        <th style="padding: 12px; text-align: left;">코드</th>
+                        <th style="padding: 12px; text-align: left;">제품명</th>
+                        <th style="padding: 12px; text-align: left;">규격</th>
+                        <th style="padding: 12px; text-align: left;">가격 (USD)</th>
+                        <th style="padding: 12px; text-align: center;">작업</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+
+            appState.products.forEach(product => {
+                html += `
+                    <tr style="border-bottom: 1px solid var(--gray-200);">
+                        <td style="padding: 12px;">${product.code || '-'}</td>
+                        <td style="padding: 12px;">${product.name || '-'}</td>
+                        <td style="padding: 12px;">${product.spec || '-'}</td>
+                        <td style="padding: 12px;">$${(parseFloat(product.priceUSD) || 0).toFixed(2)}</td>
+                        <td style="padding: 12px; text-align: center;">
+                            <button class="btn btn-sm" onclick="editProduct('${product.id}')">수정</button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteProductConfirm('${product.id}')">삭제</button>
+                        </td>
+                    </tr>`;
+            });
+
+            html += '</tbody></table>';
+            productsTable.innerHTML = html;
+        }
+
+        function showProductModal(productId = null) {
+            const modal = document.getElementById('productModal');
+            const editIdInput = document.getElementById('productEditId');
+            
+            if (productId) {
+                const product = appState.products.find(p => p.id === productId);
+                if (!product) return;
+                
+                editIdInput.value = product.id;
+                document.getElementById('productCode').value = product.code || '';
+                document.getElementById('productSubCode').value = product.subCode || '';
+                document.getElementById('productSubCodeCustom').value = product.subCodeCustom || '';
+                document.getElementById('productName').value = product.name || '';
+                document.getElementById('productProduct').value = product.product || '';
+                document.getElementById('productSpec').value = product.spec || '';
+                document.getElementById('productUnit').value = product.unit || '';
+                document.getElementById('productHsCode').value = product.hsCode || '';
+                document.getElementById('productExpDate').value = product.expDate || '';
+                document.getElementById('productPriceUSD').value = product.priceUSD || '';
+                document.getElementById('productPriceEUR').value = product.priceEUR || '';
+                document.getElementById('productNetWeight').value = product.netWeight || '';
+                document.getElementById('productGrossWeight').value = product.grossWeight || '';
+                document.getElementById('productCBM').value = product.cbm || '';
+                document.getElementById('productDesc').value = product.description || '';
+            } else {
+                editIdInput.value = '';
+                modal.querySelectorAll('input, textarea').forEach(el => el.value = '');
+            }
+            
+            modal.classList.add('active');
+        }
+
+        function editProduct(productId) {
+            showProductModal(productId);
+        }
+
+        async function saveProduct() {
+            const editId = document.getElementById('productEditId').value;
+            const productData = {
+                id: editId || 'product_' + Date.now(),
+                code: document.getElementById('productCode').value,
+                subCode: document.getElementById('productSubCode').value,
+                subCodeCustom: document.getElementById('productSubCodeCustom').value,
+                name: document.getElementById('productName').value,
+                product: document.getElementById('productProduct').value,
+                spec: document.getElementById('productSpec').value,
+                unit: document.getElementById('productUnit').value,
+                hsCode: document.getElementById('productHsCode').value,
+                expDate: document.getElementById('productExpDate').value,
+                priceUSD: document.getElementById('productPriceUSD').value,
+                priceEUR: document.getElementById('productPriceEUR').value,
+                netWeight: document.getElementById('productNetWeight').value,
+                grossWeight: document.getElementById('productGrossWeight').value,
+                cbm: document.getElementById('productCBM').value,
+                description: document.getElementById('productDesc').value
+            };
+
+            const result = await apiPost('saveProduct', productData);
+            if (result && result.success) {
+                showToast('제품이 저장되었습니다', 'success');
+                document.getElementById('productModal').classList.remove('active');
+                await loadAllData();
+            } else {
+                showToast('저장에 실패했습니다', 'error');
+            }
+        }
+
+        function deleteProductConfirm(productId) {
+            const confirmModal = document.getElementById('dangerConfirmModal') || createDangerConfirmModal();
+            confirmModal.classList.add('active');
+            
+            const confirmBtn = confirmModal.querySelector('.btn-danger');
+            confirmBtn.onclick = () => deleteProduct(productId);
+        }
+
+        async function deleteProduct(productId) {
+            const result = await apiPost('deleteProduct', { id: productId });
+            if (result && result.success) {
+                showToast('제품이 삭제되었습니다', 'success');
+                document.getElementById('dangerConfirmModal').classList.remove('active');
+                await loadAllData();
+            } else {
+                showToast('삭제에 실패했습니다', 'error');
+            }
+        }
+
+        // ========================================
+        // ORDERS PAGE
+        // ========================================
+        function renderOrdersPage() {
+            const ordersTable = document.getElementById('ordersTable');
+            
+            if (!ordersTable) return; // Table might not exist yet
+            
+            if (appState.orders.length === 0) {
+                ordersTable.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📋</div><div class="empty-state-text">등록된 주문이 없습니다</div></div>';
+                return;
+            }
+
+            let html = `<table style="width: 100%; font-size: 12px;">
+                <thead>
+                    <tr style="background-color: var(--gray-100);">
+                        <th style="padding: 12px; text-align: left;">주문번호</th>
+                        <th style="padding: 12px; text-align: left;">거래처</th>
+                        <th style="padding: 12px; text-align: left;">금액</th>
+                        <th style="padding: 12px; text-align: left;">상태</th>
+                        <th style="padding: 12px; text-align: center;">작업</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+
+            appState.orders.forEach(order => {
+                const client = appState.clients.find(c => c.id === order.clientId);
+                const clientName = client ? client.name : order.clientId;
+                
+                html += `
+                    <tr style="border-bottom: 1px solid var(--gray-200);">
+                        <td style="padding: 12px;">${order.orderNumber || '-'}</td>
+                        <td style="padding: 12px;">${clientName}</td>
+                        <td style="padding: 12px;">$${(parseFloat(order.totalAmount) || 0).toLocaleString()}</td>
+                        <td style="padding: 12px;"><span class="status-badge pending">${order.status || '계획'}</span></td>
+                        <td style="padding: 12px; text-align: center;">
+                            <button class="btn btn-sm" onclick="editOrder('${order.id}')">수정</button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteOrderConfirm('${order.id}')">삭제</button>
+                        </td>
+                    </tr>`;
+            });
+
+            html += '</tbody></table>';
+            ordersTable.innerHTML = html;
+        }
+
+        function showOrderModal(orderId = null) {
+            const modal = document.getElementById('orderModal');
+            const editIdInput = document.getElementById('orderEditId');
+            
+            if (orderId) {
+                const order = appState.orders.find(o => o.id === orderId);
+                if (!order) return;
+                
+                editIdInput.value = order.id;
+                document.getElementById('orderNumber').value = order.orderNumber || '';
+                document.getElementById('orderDate').value = order.orderDate || '';
+                document.getElementById('orderStatus').value = order.status || '계획';
+                document.getElementById('orderClient').value = order.clientId || '';
+                document.getElementById('orderCurrency').value = order.currency || 'USD';
+                document.getElementById('orderPaymentTerms').value = order.paymentTerms || 'L/C';
+                document.getElementById('orderIncoterms').value = order.incoterms || 'FOB';
+                document.getElementById('orderPort').value = order.port || '';
+                document.getElementById('orderRemarks').value = order.remarks || '';
+                document.getElementById('orderProductionDate').value = order.productionDate || '';
+                document.getElementById('orderSterilizeDate').value = order.sterilizeDate || '';
+                document.getElementById('orderShipDate').value = order.shipDate || '';
+                document.getElementById('orderExchangeRate').value = order.exchangeRate || '';
+                document.getElementById('orderKRWAmount').value = order.krwAmount || '';
+                document.getElementById('orderShippingCost').value = order.shippingCost || '';
+                document.getElementById('orderFee1').value = order.fee1 || '';
+                document.getElementById('orderFee2').value = order.fee2 || '';
+                document.getElementById('orderCol1Date').value = order.col1Date || '';
+                document.getElementById('orderCol1Amount').value = order.col1Amount || '';
+                document.getElementById('orderCol1Fee1').value = order.col1Fee1 || '';
+                document.getElementById('orderCol1Fee2').value = order.col1Fee2 || '';
+                document.getElementById('orderCol1Rate').value = order.col1Rate || '';
+                document.getElementById('orderCol1KRW').value = order.col1KRW || '';
+                document.getElementById('orderCol2Date').value = order.col2Date || '';
+                document.getElementById('orderCol2Amount').value = order.col2Amount || '';
+                document.getElementById('orderCol2Fee1').value = order.col2Fee1 || '';
+                document.getElementById('orderCol2Fee2').value = order.col2Fee2 || '';
+                document.getElementById('orderCol2Rate').value = order.col2Rate || '';
+                document.getElementById('orderCol2KRW').value = order.col2KRW || '';
+                document.getElementById('orderCollectionNote').value = order.collectionNote || '';
+                
+                renderOrderItems(order.items || []);
+                updateOrderTotals();
+            } else {
+                editIdInput.value = '';
+                modal.querySelectorAll('input, textarea, select').forEach(el => el.value = '');
+                document.getElementById('orderItemsBody').innerHTML = '';
+            }
+            
+            modal.classList.add('active');
+        }
+
+        function renderOrderItems(items) {
+            const tbody = document.getElementById('orderItemsBody');
+            tbody.innerHTML = '';
+            
+            items.forEach((item, idx) => {
+                const product = appState.products.find(p => p.id === item.productId);
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td style="padding: 8px;">
+                        <select onchange="updateOrderTotals()" data-field="productId" data-idx="${idx}" style="width: 100%; padding: 4px;">
+                            <option value="">선택</option>
+                            ${appState.products.map(p => `<option value="${p.id}" ${p.id === item.productId ? 'selected' : ''}>${p.name}</option>`).join('')}
+                        </select>
+                    </td>
+                    <td style="padding: 8px;"><input type="number" onchange="updateOrderTotals()" data-field="quantity" data-idx="${idx}" value="${item.quantity || 0}" style="width: 100%; padding: 4px;"></td>
+                    <td style="padding: 8px;"><input type="number" onchange="updateOrderTotals()" data-field="unitPrice" data-idx="${idx}" value="${item.unitPrice || 0}" step="0.01" style="width: 100%; padding: 4px;"></td>
+                    <td style="padding: 8px;">$${((item.quantity || 0) * (item.unitPrice || 0)).toFixed(2)}</td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            const addRow = document.createElement('tr');
+            addRow.innerHTML = `
+                <td colspan="4" style="padding: 8px; text-align: center;">
+                    <button class="btn btn-sm" onclick="addOrderItem()">➕ 항목 추가</button>
+                </td>
+            `;
+            tbody.appendChild(addRow);
+        }
+
+        function addOrderItem() {
+            const tbody = document.getElementById('orderItemsBody');
+            const rows = tbody.querySelectorAll('tr');
+            const currentCount = rows.length - 1; // Subtract add button row
+            
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td style="padding: 8px;">
+                    <select onchange="updateOrderTotals()" data-field="productId" data-idx="${currentCount}" style="width: 100%; padding: 4px;">
+                        <option value="">선택</option>
+                        ${appState.products.map(p => `<option value="${p.id}">${p.name}</option>`).join('')}
+                    </select>
+                </td>
+                <td style="padding: 8px;"><input type="number" onchange="updateOrderTotals()" data-field="quantity" data-idx="${currentCount}" value="0" style="width: 100%; padding: 4px;"></td>
+                <td style="padding: 8px;"><input type="number" onchange="updateOrderTotals()" data-field="unitPrice" data-idx="${currentCount}" value="0" step="0.01" style="width: 100%; padding: 4px;"></td>
+                <td style="padding: 8px;">$0</td>
+            `;
+            tbody.insertBefore(row, rows[rows.length - 1]);
+            updateOrderTotals();
+        }
+
+        function updateOrderTotals() {
+            const tbody = document.getElementById('orderItemsBody');
+            const rows = tbody.querySelectorAll('tr:not(:last-child)');
+            let total = 0;
+
+            rows.forEach((row, idx) => {
+                const quantity = parseFloat(row.querySelector('[data-field="quantity"]')?.value || 0);
+                const unitPrice = parseFloat(row.querySelector('[data-field="unitPrice"]')?.value || 0);
+                const subtotal = quantity * unitPrice;
+                total += subtotal;
+                
+                const amountCell = row.querySelector('td:last-child');
+                if (amountCell) {
+                    amountCell.textContent = '$' + subtotal.toFixed(2);
+                }
+            });
+
+            document.getElementById('orderTotalAmount').textContent = '$' + total.toFixed(2);
+            updateCollectionTotals();
+        }
+
+        function updateCollectionTotals() {
+            const col1Amount = parseFloat(document.getElementById('orderCol1Amount').value || 0);
+            const col2Amount = parseFloat(document.getElementById('orderCol2Amount').value || 0);
+            const col1Fee1 = parseFloat(document.getElementById('orderCol1Fee1').value || 0);
+            const col1Fee2 = parseFloat(document.getElementById('orderCol1Fee2').value || 0);
+            const col2Fee1 = parseFloat(document.getElementById('orderCol2Fee1').value || 0);
+            const col2Fee2 = parseFloat(document.getElementById('orderCol2Fee2').value || 0);
+            
+            const totalCollected = col1Amount + col2Amount - col1Fee1 - col1Fee2 - col2Fee1 - col2Fee2;
+            const orderTotal = parseFloat(document.getElementById('orderTotalAmount').textContent.replace('$', '').replace(',', '') || 0);
+            const balance = orderTotal - totalCollected;
+            const percentage = orderTotal > 0 ? Math.round((totalCollected / orderTotal) * 100) : 0;
+
+            document.getElementById('orderColTotal').textContent = '$' + totalCollected.toFixed(2);
+            document.getElementById('orderBalance').textContent = '$' + balance.toFixed(2);
+            document.getElementById('orderBalancePct').textContent = percentage + '%';
+
+            // KRW totals
+            const col1KRW = parseFloat(document.getElementById('orderCol1KRW').value || 0);
+            const col2KRW = parseFloat(document.getElementById('orderCol2KRW').value || 0);
+            document.getElementById('orderColKRWTotal').textContent = '₩' + (col1KRW + col2KRW).toLocaleString();
+        }
+
+        function editOrder(orderId) {
+            showOrderModal(orderId);
+        }
+
+        async function saveOrder() {
+            const editId = document.getElementById('orderEditId').value;
+            const tbody = document.getElementById('orderItemsBody');
+            const itemRows = tbody.querySelectorAll('tr:not(:last-child)');
+            
+            const items = Array.from(itemRows).map(row => ({
+                productId: row.querySelector('[data-field="productId"]').value,
+                quantity: parseFloat(row.querySelector('[data-field="quantity"]').value || 0),
+                unitPrice: parseFloat(row.querySelector('[data-field="unitPrice"]').value || 0)
+            })).filter(item => item.productId);
+
+            const orderData = {
+                id: editId || 'order_' + Date.now(),
+                orderNumber: document.getElementById('orderNumber').value,
+                orderDate: document.getElementById('orderDate').value,
+                status: document.getElementById('orderStatus').value,
+                clientId: document.getElementById('orderClient').value,
+                currency: document.getElementById('orderCurrency').value,
+                paymentTerms: document.getElementById('orderPaymentTerms').value,
+                incoterms: document.getElementById('orderIncoterms').value,
+                port: document.getElementById('orderPort').value,
+                remarks: document.getElementById('orderRemarks').value,
+                productionDate: document.getElementById('orderProductionDate').value,
+                sterilizeDate: document.getElementById('orderSterilizeDate').value,
+                shipDate: document.getElementById('orderShipDate').value,
+                exchangeRate: document.getElementById('orderExchangeRate').value,
+                krwAmount: document.getElementById('orderKRWAmount').value,
+                shippingCost: document.getElementById('orderShippingCost').value,
+                fee1: document.getElementById('orderFee1').value,
+                fee2: document.getElementById('orderFee2').value,
+                col1Date: document.getElementById('orderCol1Date').value,
+                col1Amount: document.getElementById('orderCol1Amount').value,
+                col1Fee1: document.getElementById('orderCol1Fee1').value,
+                col1Fee2: document.getElementById('orderCol1Fee2').value,
+                col1Rate: document.getElementById('orderCol1Rate').value,
+                col1KRW: document.getElementById('orderCol1KRW').value,
+                col2Date: document.getElementById('orderCol2Date').value,
+                col2Amount: document.getElementById('orderCol2Amount').value,
+                col2Fee1: document.getElementById('orderCol2Fee1').value,
+                col2Fee2: document.getElementById('orderCol2Fee2').value,
+                col2Rate: document.getElementById('orderCol2Rate').value,
+                col2KRW: document.getElementById('orderCol2KRW').value,
+                collectionNote: document.getElementById('orderCollectionNote').value,
+                totalAmount: parseFloat(document.getElementById('orderTotalAmount').textContent.replace('$', '').replace(',', '')) || 0,
+                items
+            };
+
+            const result = await apiPost('saveOrder', orderData);
+            if (result && result.success) {
+                showToast('주문이 저장되었습니다', 'success');
+                document.getElementById('orderModal').classList.remove('active');
+                await loadAllData();
+            } else {
+                showToast('저장에 실패했습니다', 'error');
+            }
+        }
+
+        function deleteOrderConfirm(orderId) {
+            const confirmModal = document.getElementById('dangerConfirmModal') || createDangerConfirmModal();
+            confirmModal.classList.add('active');
+            
+            const confirmBtn = confirmModal.querySelector('.btn-danger');
+            confirmBtn.onclick = () => deleteOrder(orderId);
+        }
+
+        async function deleteOrder(orderId) {
+            const result = await apiPost('deleteOrder', { id: orderId });
+            if (result && result.success) {
+                showToast('주문이 삭제되었습니다', 'success');
+                document.getElementById('dangerConfirmModal').classList.remove('active');
+                await loadAllData();
+            } else {
+                showToast('삭제에 실패했습니다', 'error');
+            }
+        }
+
+        // ========================================
+        // COLLECTION PAGE
+        // ========================================
+        function renderCollectionPage() {
+            const collectionTable = document.getElementById('page-collection');
+            if (!collectionTable) return;
+
+            const summary = document.querySelector('.collection-summary');
+            if (!summary) return;
+
+            let totalReceivable = 0;
+            let totalCollected = 0;
+
+            appState.orders.forEach(order => {
+                const amount = parseFloat(order.totalAmount || 0);
+                const collected = (parseFloat(order.col1Amount || 0) + parseFloat(order.col2Amount || 0)) - 
+                                (parseFloat(order.col1Fee1 || 0) + parseFloat(order.col1Fee2 || 0) + 
+                                 parseFloat(order.col2Fee1 || 0) + parseFloat(order.col2Fee2 || 0));
+                totalReceivable += amount;
+                totalCollected += collected;
+            });
+
+            const balance = totalReceivable - totalCollected;
+
+            summary.querySelector('.summary-items').innerHTML = `
+                <div class="summary-item">
+                    <div class="summary-label">총 미수금</div>
+                    <div class="summary-value">$${totalReceivable.toLocaleString()}</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-label">수금액</div>
+                    <div class="summary-value">$${totalCollected.toLocaleString()}</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-label">잔액</div>
+                    <div class="summary-value">$${balance.toLocaleString()}</div>
+                </div>
+            `;
+
+            const tableArea = collectionTable.querySelector('.table-container');
+            if (!tableArea) return;
+
+            let html = `<table style="width: 100%; font-size: 12px;">
+                <thead>
+                    <tr style="background-color: var(--gray-100);">
+                        <th style="padding: 12px; text-align: left;">주문번호</th>
+                        <th style="padding: 12px; text-align: left;">거래처</th>
+                        <th style="padding: 12px; text-align: right;">주문금액</th>
+                        <th style="padding: 12px; text-align: right;">수금액</th>
+                        <th style="padding: 12px; text-align: right;">잔액</th>
+                        <th style="padding: 12px; text-align: center;">수금률</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+
+            appState.orders.forEach(order => {
+                const client = appState.clients.find(c => c.id === order.clientId);
+                const clientName = client ? client.name : order.clientId;
+                const amount = parseFloat(order.totalAmount || 0);
+                const collected = (parseFloat(order.col1Amount || 0) + parseFloat(order.col2Amount || 0)) - 
+                                (parseFloat(order.col1Fee1 || 0) + parseFloat(order.col1Fee2 || 0) + 
+                                 parseFloat(order.col2Fee1 || 0) + parseFloat(order.col2Fee2 || 0));
+                const balance = amount - collected;
+                const percentage = amount > 0 ? Math.round((collected / amount) * 100) : 0;
+
+                html += `
+                    <tr style="border-bottom: 1px solid var(--gray-200);">
+                        <td style="padding: 12px;">${order.orderNumber || '-'}</td>
+                        <td style="padding: 12px;">${clientName}</td>
+                        <td style="padding: 12px; text-align: right;">$${amount.toLocaleString()}</td>
+                        <td style="padding: 12px; text-align: right;">$${collected.toLocaleString()}</td>
+                        <td style="padding: 12px; text-align: right; color: var(--danger-color);">$${balance.toLocaleString()}</td>
+                        <td style="padding: 12px; text-align: center;"><strong>${percentage}%</strong></td>
+                    </tr>`;
+            });
+
+            html += '</tbody></table>';
+            tableArea.innerHTML = '<div class="table-header"><h3>수금 현황</h3></div>' + html;
+        }
+
+        // ========================================
+        // PI / INVOICE / PACKING PAGES
+        // ========================================
+        async function savePI() {
+            const editId = document.getElementById('piEditId').value;
+            const piData = {
+                id: editId || 'pi_' + Date.now(),
+                piNumber: document.getElementById('piNumber').value,
+                piDate: document.getElementById('piDate').value,
+                piValidity: document.getElementById('piValidity').value,
+                piClient: document.getElementById('piClient').value,
+                piFromOrder: document.getElementById('piFromOrder').value,
+                piCurrency: document.getElementById('piCurrency').value,
+                piPaymentTerms: document.getElementById('piPaymentTerms').value,
+                piIncoterms: document.getElementById('piIncoterms').value,
+                piPort: document.getElementById('piPort').value
+            };
+
+            const result = await apiPost('savePI', piData);
+            if (result && result.success) {
+                showToast('PI가 저장되었습니다', 'success');
+                document.getElementById('piModal').classList.remove('active');
+                await loadAllData();
+            } else {
+                showToast('저장에 실패했습니다', 'error');
+            }
+        }
+
+        // ========================================
+        // UTILITY FUNCTIONS
+        // ========================================
+        function formatCurrency(amount, currency) {
+            if (currency === 'KRW') {
+                return '₩' + Math.round(amount).toLocaleString('ko-KR');
+            }
+            return currency + amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        function formatDate(date) {
+            if (!date) return '-';
+            const d = new Date(date);
+            return d.toLocaleDateString('ko-KR');
+        }
+
+        function generateDocNumber(prefix) {
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = String(today.getMonth() + 1).padStart(2, '0');
+            const random = String(Math.floor(Math.random() * 1000)).padStart(3, '0');
+            return `${prefix}-${year}${month}-${random}`;
+        }
+
+        // Handle modal close on overlay click
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('modal-overlay')) {
+                e.target.classList.remove('active');
+            }
+        });
+
+        // Add orders table if it exists
+        const ordersPage = document.getElementById('page-orders');
+        if (ordersPage) {
+            const container = ordersPage.querySelector('.table-container');
+            if (container && !document.getElementById('ordersTable')) {
+                const div = document.createElement('div');
+                div.id = 'ordersTable';
+                container.appendChild(div);
+            }
+        }
+    </script>
+
+</body>
+</html>
