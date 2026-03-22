@@ -1786,7 +1786,7 @@ input[type="tel"]:focus {
                     appState.chartInstances['trends'].destroy();
                 }
                 appState.chartInstances['trends'] = new Chart(trendsCtx, {
-                    type: 'area',
+                    type: 'line',
                     data: {
                         labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4', 'Week 5', 'Week 6'],
                         datasets: [{
